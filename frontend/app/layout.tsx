@@ -2,12 +2,14 @@ import { Inter } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
 import SWRegister from './sw-register'
+import PWAInstallPrompt from '../components/PWAInstallPrompt'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata = {
   title: 'SAMAAN | Pension Assist',
   description: 'AI-powered, accessibility-first pension companion.',
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* PWA Registration */}
         <SWRegister />
+        <PWAInstallPrompt />
 
         {/* Footer */}
         <footer className="bg-white border-t border-slate-200 py-12">
