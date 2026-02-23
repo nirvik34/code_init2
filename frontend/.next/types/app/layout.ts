@@ -1,4 +1,4 @@
-// File: /home/appu/projects/init/frontend/app/layout.tsx
+// File: /home/appu/projects/init_github/code_init2/frontend/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

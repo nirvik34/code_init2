@@ -1,4 +1,5 @@
 import './globals.css'
+import SWRegister from './sw-register'
 
 export const metadata = {
   title: 'SAMAAN Pension Assist',
@@ -10,6 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <div className="min-h-screen bg-elderBlue text-primary">{children}</div>
+        <SWRegister />
       </body>
     </html>
   )
