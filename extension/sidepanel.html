@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAMAAN Clarifier</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- ───────────── Header ───────────── -->
+    <header class="header" role="banner">
+        <div class="header-left">
+            <span class="header-logo" aria-hidden="true">⚖️</span>
+            <span class="header-title">SAMAAN Clarifier</span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+    </header>
+
+    <!-- ───────────── Main Content ───────────── -->
+    <main class="content" role="main">
+
+        <!-- Input Card -->
+        <div class="card" role="region" aria-label="Text input">
+            <span class="card-label">Paste policy text</span>
+            <div class="input-area">
+                <textarea
+                    id="input-text"
+                    class="input-textarea"
+                    placeholder="Example: Pursuant to Clause 14(b)(iii), beneficiaries who have attained the age of superannuation and belong to economically weaker sections…"
+                    aria-label="Policy text to simplify"
+                    maxlength="5000"
+                ></textarea>
+                <span class="char-counter" id="char-counter" aria-live="polite">0 / 5000</span>
+            </div>
+
+            <!-- Controls Row -->
+            <div class="controls-row">
+                <button class="toggle-pill" id="lang-toggle" title="Toggle language" aria-label="Toggle output language" aria-pressed="false">
+                    <span class="pill-icon">🌐</span>
+                    <span id="lang-label">EN</span>
+                </button>
+                <button class="toggle-pill" id="mode-toggle" title="Toggle bullet mode" aria-label="Toggle bullet point mode" aria-pressed="false">
+                    <span class="pill-icon">📋</span>
+                    <span id="mode-label">Prose</span>
+                </button>
+                <button class="btn-primary" id="clarify-btn" aria-label="Clarify text">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span class="btn-label">✨ Clarify</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div class="loader-panel" id="loader" role="status" aria-label="Loading">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <p class="loader-text">Simplifying policy text…</p>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="result-panel" id="result-panel" role="region" aria-label="Simplified result">
+            <div class="result-card" id="result-card">
+                <div class="result-header">
+                    <span class="result-title" id="result-title">
+                        <span>✅</span> Simplified Explanation
+                    </span>
+                    <button class="copy-btn" id="copy-btn" title="Copy to clipboard" aria-label="Copy simplified text">
+                        <span id="copy-icon">📋</span>
+                        <span id="copy-label">Copy</span>
+                    </button>
+                </div>
+                <div class="result-text" id="result-text" tabindex="0"></div>
+            </div>
+        </div>
+
+        <!-- Empty State (shown initially) -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📜</div>
+            <p>Paste any government, pension, or legal <br>policy text above and click <strong>Clarify</strong>.</p>
+            <p style="margin-top: 8px; font-size: 11px;">
+                Or right-click selected text on any page → <br>
+                <em>"SAMAAN: Clarify Selected Text"</em>
+            </p>
+        </div>
+
+    </main>
+
+    <!-- ───────────── Footer ───────────── -->
+    <footer class="footer" role="contentinfo">
+        <span class="status-dot"></span> SAMAAN Clarifier v2.0 &nbsp;·&nbsp;
+        <kbd class="kbd">Ctrl+Enter</kbd> to clarify
+    </footer>
+
+    <script src="sidepanel.js"></script>
+</body>
+
+</html>

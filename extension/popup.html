@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 280px;
+      padding: 16px;
+      margin: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .logo {
+      font-size: 22px;
+    }
+
+    .title {
+      font-weight: 800;
+      font-size: 16px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.3px;
+    }
+
+    .version {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-left: auto;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+      color: #334155;
+    }
+
+    .menu-btn:hover {
+      background: #f0f4f8;
+      border-color: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+    }
+
+    .menu-btn .icon {
+      font-size: 16px;
+    }
+
+    .desc {
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 12px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <span class="logo">⚖️</span>
+    <span class="title">SAMAAN Clarifier</span>
+    <span class="version">v2.0</span>
+  </div>
+  <div class="menu">
+    <button class="menu-btn" id="open-sidepanel">
+      <span class="icon">✨</span>
+      <span>Open Clarifier Panel</span>
+    </button>
+    <button class="menu-btn" id="open-dashboard">
+      <span class="icon">📊</span>
+      <span>View Dashboard</span>
+    </button>
+  </div>
+  <p class="desc">
+    Simplify government &amp; legal text<br>into citizen-friendly language.
+  </p>
+  <script>
+    document.getElementById('open-sidepanel').addEventListener('click', async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          await chrome.sidePanel.open({ tabId: tab.id });
+        }
+      } catch (err) {
+        console.error('[SAMAAN] Error opening side panel:', err);
+      }
+      window.close();
+    });
+
+    document.getElementById('open-dashboard').addEventListener('click', () => {
+      chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+    });
+  </script>
+</body>
+
+</html>

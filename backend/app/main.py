@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-load_dotenv()
+# Load env: try root .env.local first, then backend/.env
+_root = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_root / ".env.local", override=False)
+load_dotenv(override=False)
 
-from app.routes import predict, ocr, grievance, simplify, auth
+from app.routes import predict, ocr, grievance, simplify, auth, chat, clarify
 
 app = FastAPI(title="SAMAAN ML Backend")
 
@@ -22,6 +26,8 @@ app.include_router(ocr.router, prefix="", tags=["ocr"])
 app.include_router(grievance.router, prefix="", tags=["grievance"])
 app.include_router(simplify.router, prefix="", tags=["simplify"])
 app.include_router(auth.router, prefix="", tags=["auth"])
+app.include_router(chat.router, prefix="", tags=["chat"])
+app.include_router(clarify.router, prefix="", tags=["clarify"])
 
 
 @app.on_event("startup")
@@ -35,3 +41,9 @@ async def startup_event():
 @app.get("/")
 async def root():
     return {"service": "SAMAAN ML Backend", "status": "ok"}
+
+
+@app.get("/health")
+async def health():
+    """Health-check endpoint for monitoring."""
+    return {"status": "healthy", "service": "samaan-backend", "version": "2.0.0"}

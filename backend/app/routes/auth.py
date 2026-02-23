@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 
 from app.models import user_model
 
@@ -9,6 +10,22 @@ router = APIRouter()
 class SignupRequest(BaseModel):
     username: str
     password: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/login")
+async def login(req: LoginRequest):
+    """Log in with standard username and password."""
+    ok = await user_model.verify_user_password(req.username, req.password)
+    if not ok:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    print(f"[AUTH] ✅ Password login success for '{req.username}'")
+    return {"success": True, "username": req.username}
 
 
 class FingerprintRequest(BaseModel):
@@ -74,7 +91,7 @@ async def login_with_fingerprint(req: LoginFingerprintRequest):
 
 
 @router.post("/verify/fingerprint")
-async def verify_fingerprint(req: VerifyFingerprintRequest):
+async def verify_fingerprint_route(req: VerifyFingerprintRequest):
     ok = await user_model.verify_fingerprint(req.username, req.fingerprint)
     return {"match": ok}
 
@@ -85,13 +102,13 @@ async def list_users():
     from app.db import db, USING_MONGO
     if USING_MONGO:
         import asyncio
-        import pymongo
+        # Access the raw pymongo collection through the DBWrapper
+        raw_db = db._raw
         def _list_sync():
-            coll = db._raw["users"]
-            return [{"username": u["username"]} for u in coll.find({}, {"_id": 0, "username": 1})]
+            coll = raw_db["users"]
+            return [{"username": u.get("username", "?")} for u in coll.find({}, {"_id": 0, "username": 1})]
         users = await asyncio.to_thread(_list_sync)
     else:
-        # file fallback
         data = db.users._read()
         users = [{"username": u} for u in data.keys()]
     return {"users": users, "storage": "mongodb" if USING_MONGO else "file"}

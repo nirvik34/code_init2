@@ -3,7 +3,7 @@ import asyncio
 from typing import Any
 from pathlib import Path
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.getenv("MONGODB_URI") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
 MONGO_DB = os.getenv("MONGO_DB", "samaan")
 
 
