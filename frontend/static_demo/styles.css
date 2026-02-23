@@ -1,0 +1,15 @@
+:root{
+  --bg: #f0f6ff;
+  --fg: #0b3b91;
+  --panel: #ffffff;
+}
+*{box-sizing:border-box}
+body{font-family:system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--fg);padding:16px}
+.container{max-width:780px;margin:0 auto}
+h1{font-size:24px;margin-bottom:12px}
+section{margin-bottom:18px}
+label{display:block;margin-bottom:6px;font-weight:600}
+input,textarea{width:100%;padding:10px;font-size:18px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:8px}
+button{background:var(--fg);color:white;padding:12px 16px;border-radius:10px;border:none;font-size:18px;min-height:48px}
+.panel{background:var(--panel);padding:12px;border-radius:8px;margin-top:8px}
+footer{margin-top:20px;color:#334155}

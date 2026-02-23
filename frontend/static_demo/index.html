@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SAMAAN Demo (Static)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>SAMAAN Pension Assist — Demo</h1>
+
+    <section aria-labelledby="dash-title">
+      <h2 id="dash-title">Delay Prediction</h2>
+      <label for="history">Payment history (comma separated ISO dates)</label>
+      <textarea id="history" rows="3">2024-01-10,2024-02-11,2024-03-15</textarea>
+      <button id="predictBtn">Predict Delay</button>
+      <div id="predictResult" class="panel" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="ocr-title">
+      <h2 id="ocr-title">OCR Auto-fill</h2>
+      <input id="ocrFile" type="file" accept="image/*" />
+      <button id="ocrBtn">Upload & Extract</button>
+      <div id="ocrResult" class="panel" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="gr-title">
+      <h2 id="gr-title">Grievance Generator</h2>
+      <input id="g_name" placeholder="Name" />
+      <input id="g_scheme" placeholder="Scheme (e.g. IGNOAPS)" />
+      <input id="g_last" placeholder="Last payment (YYYY-MM-DD)" />
+      <input id="g_delay" type="number" placeholder="Delay days" />
+      <button id="grBtn">Generate Letter</button>
+      <div id="grResult" class="panel" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="sim-title">
+      <h2 id="sim-title">Text Simplifier</h2>
+      <textarea id="simText" rows="4">Paste complex government text here...</textarea>
+      <button id="simBtn">Simplify</button>
+      <div id="simResult" class="panel" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      <small>Backend: <span id="backendUrl">http://127.0.0.1:8000</span></small>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
