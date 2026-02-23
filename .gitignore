@@ -1,3 +1,13 @@
-node_modules
-trial
-docs
+node_modules/
+frontend/node_modules/
+*.pyc
+__pycache__/
+.env
+venv/
+.env.local
+.DS_Store
+trial/
+docs/
+backend/venv/
+backend/__pycache__/
+frontend/.next/
