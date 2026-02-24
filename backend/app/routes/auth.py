@@ -23,7 +23,7 @@ async def login(req: LoginRequest):
     ok = await user_model.verify_user_password(req.username, req.password)
     if not ok:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    
+
     print(f"[AUTH] ✅ Password login success for '{req.username}'")
     return {"success": True, "username": req.username}
 
@@ -84,7 +84,7 @@ async def login_with_fingerprint(req: LoginFingerprintRequest):
     """Log in by matching fingerprint across all users."""
     user = await user_model.get_user_by_fingerprint(req.fingerprint)
     if user is None:
-        print(f"[AUTH] ❌ Fingerprint login failed — not found")
+        print("[AUTH] ❌ Fingerprint login failed — not found")
         raise HTTPException(status_code=401, detail="No account matches this fingerprint")
     print(f"[AUTH] ✅ Fingerprint login success for '{user['username']}'")
     return {"success": True, "username": user["username"]}
@@ -96,13 +96,44 @@ async def verify_fingerprint_route(req: VerifyFingerprintRequest):
     return {"match": ok}
 
 
+# ── Emergency Contact ─────────────────────────────────────────────────────────
+
+class EmergencyContactRequest(BaseModel):
+    username: str
+    name: str
+    phone: str
+    relation: str
+
+
+@router.post("/profile/emergency-contact")
+async def save_emergency_contact(req: EmergencyContactRequest):
+    """Save or update emergency contact for a user."""
+    contact = {
+        "name": req.name.strip(),
+        "phone": req.phone.strip(),
+        "relation": req.relation.strip(),
+    }
+    found = await user_model.update_emergency_contact(req.username, contact)
+    if not found:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"success": True, "emergency_contact": contact}
+
+
+@router.get("/profile/{username}")
+async def get_user_profile(username: str):
+    """Fetch public profile including emergency contact."""
+    profile = await user_model.get_profile(username)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User not found")
+    return profile
+
+
 @router.get("/users")
 async def list_users():
     """Debug endpoint: list all registered usernames."""
     from app.db import db, USING_MONGO
     if USING_MONGO:
         import asyncio
-        # Access the raw pymongo collection through the DBWrapper
         raw_db = db._raw
         def _list_sync():
             coll = raw_db["users"]

@@ -30,6 +30,37 @@ body {
   background-size: 20px 20px;
 }
 
+/* ── Accessibility: Large Text Mode ── */
+html.samaan-large-text {
+  font-size: 120%;
+}
+html.samaan-large-text p,
+html.samaan-large-text span,
+html.samaan-large-text label,
+html.samaan-large-text button,
+html.samaan-large-text a,
+html.samaan-large-text input,
+html.samaan-large-text textarea,
+html.samaan-large-text select,
+html.samaan-large-text li {
+  font-size: 1.15em !important;
+  line-height: 1.8 !important;
+}
+html.samaan-large-text h1 { font-size: 2.4rem !important; }
+html.samaan-large-text h2 { font-size: 2rem !important; }
+html.samaan-large-text h3 { font-size: 1.7rem !important; }
+html.samaan-large-text h4 { font-size: 1.35rem !important; }
+
+/* ── Accessibility: Reduce Motion Mode ── */
+html.samaan-reduce-motion *,
+html.samaan-reduce-motion *::before,
+html.samaan-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* Custom scrollbar for a cleaner look */
 ::-webkit-scrollbar {
   width: 8px;

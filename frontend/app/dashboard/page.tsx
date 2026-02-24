@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { predictDelay } from '../../lib/api'
+import { predictDelay, getProfile, saveEmergencyContact } from '../../lib/api'
 import ChatBot from '../../components/ChatBot'
 import TopNav from '../../components/TopNav'
 
@@ -17,13 +17,30 @@ export default function Dashboard() {
   } | null>(null)
   const [predLoading, setPredLoading] = useState(true)
 
+  // Emergency contact
+  const [ec, setEc] = useState({ name: '', phone: '', relation: '' })
+  const [ecEditing, setEcEditing] = useState(false)
+  const [ecSaving, setEcSaving] = useState(false)
+  const [ecSaved, setEcSaved] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem('user')
+    let uname = ''
     if (stored) {
       try {
         const u = JSON.parse(stored)
-        setUsername(u.username || '')
+        uname = u.username || ''
+        setUsername(uname)
       } catch { }
+    }
+
+    // Load emergency contact from backend profile
+    if (uname) {
+      getProfile(uname).then(profile => {
+        if (profile?.emergency_contact) {
+          setEc(profile.emergency_contact)
+        }
+      }).catch(() => { })
     }
 
     // Fetch prediction from backend with sample payment history
@@ -353,6 +370,95 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined ml-auto text-gray-300 group-hover:text-dash-primary">arrow_forward_ios</span>
               </Link>
             </div>
+          </div>
+
+          {/* Emergency Contact Card */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-rose-600 text-base">emergency</span>
+                </div>
+                <h4 className="font-bold text-ink text-sm">Emergency Contact</h4>
+              </div>
+              {!ecEditing && (
+                <button
+                  onClick={() => setEcEditing(true)}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[14px]">edit</span>
+                  {ec.name ? 'Edit' : 'Add'}
+                </button>
+              )}
+            </div>
+
+            {!ecEditing ? (
+              ec.name ? (
+                <div className="px-5 py-4 flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-rose-600">person</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{ec.name}</p>
+                      <p className="text-xs text-slate-500">{ec.relation}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={`tel:${ec.phone}`}
+                    className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 transition-colors rounded-xl px-4 py-2.5 text-sm font-semibold text-rose-700"
+                  >
+                    <span className="material-symbols-outlined text-base">call</span>
+                    {ec.phone}
+                  </a>
+                </div>
+              ) : (
+                <div className="px-5 py-6 flex flex-col items-center gap-2 text-center">
+                  <span className="material-symbols-outlined text-slate-300 text-4xl">person_add</span>
+                  <p className="text-sm text-slate-400">No emergency contact added yet.</p>
+                  <button
+                    onClick={() => setEcEditing(true)}
+                    className="text-xs font-semibold text-indigo-600 hover:underline"
+                  >+ Add contact</button>
+                </div>
+              )
+            ) : (
+              <form
+                className="px-5 py-4 flex flex-col gap-3"
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!ec.name || !ec.phone) return
+                  setEcSaving(true)
+                  try {
+                    await saveEmergencyContact({ username, ...ec })
+                    setEcSaved(true)
+                    setEcEditing(false)
+                    setTimeout(() => setEcSaved(false), 3000)
+                  } catch { } finally {
+                    setEcSaving(false)
+                  }
+                }}
+              >
+                {[['Name', 'name', 'person', 'text'], ['Phone', 'phone', 'call', 'tel'], ['Relation', 'relation', 'family_restroom', 'text']].map(([label, field, icon, type]) => (
+                  <div key={field} className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">{icon}</span>
+                    <input
+                      type={type}
+                      placeholder={label}
+                      required={field !== 'relation'}
+                      value={(ec as any)[field]}
+                      onChange={e => setEc(prev => ({ ...prev, [field]: e.target.value }))}
+                      className="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all"
+                    />
+                  </div>
+                ))}
+                <div className="flex gap-2 mt-1">
+                  <button type="button" onClick={() => setEcEditing(false)} className="flex-1 h-9 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors">Cancel</button>
+                  <button type="submit" disabled={ecSaving} className="flex-1 h-9 rounded-lg bg-indigo-600 text-white text-xs font-bold shadow shadow-indigo-200 hover:bg-indigo-700 transition-colors disabled:opacity-60">{ecSaving ? 'Saving…' : 'Save Contact'}</button>
+                </div>
+                {ecSaved && <p className="text-center text-xs text-emerald-600 font-semibold">✓ Saved successfully</p>}
+              </form>
+            )}
           </div>
 
           {/* Support Banner */}

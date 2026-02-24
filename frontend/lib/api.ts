@@ -15,11 +15,13 @@ export async function predictDelay(payload: { payment_history: string[] }) {
 export async function ocrExtract(file: File) {
   const fd = new FormData()
   fd.append('file', file)
-  const res = await axios.post(`${BASE}/ocr-extract`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+  const res = await axios.post(`${BASE}/ocr-extract`, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   return res.data
 }
 
-export async function generateGrievance(payload: { scheme: string, last_payment: string, delay_days: number, name: string }) {
+export async function generateGrievance(payload: { scheme: string; last_payment: string; delay_days: number; name: string }) {
   const res = await axios.post(`${BASE}/generate-grievance`, payload)
   return res.data
 }
@@ -30,7 +32,6 @@ export async function simplifyText(payload: { text: string; language?: string; m
 }
 
 export async function fetchDashboardData() {
-  // Returns prediction data that the dashboard can use
   try {
     const res = await axios.get(`${BASE}/`)
     return res.data
@@ -41,6 +42,21 @@ export async function fetchDashboardData() {
 
 export async function listUsers() {
   const res = await axios.get(`${BASE}/users`)
+  return res.data
+}
+
+export async function getProfile(username: string) {
+  const res = await axios.get(`${BASE}/profile/${encodeURIComponent(username)}`)
+  return res.data
+}
+
+export async function saveEmergencyContact(payload: {
+  username: string
+  name: string
+  phone: string
+  relation: string
+}) {
+  const res = await axios.post(`${BASE}/profile/emergency-contact`, payload)
   return res.data
 }
 
