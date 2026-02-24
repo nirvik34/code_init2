@@ -74,7 +74,91 @@ export default function Dashboard() {
 
   const displayName = username ? `${username} Ji` : 'User'
 
-  // Risk data
+  // ── Pension Longevity Analyzer ──────────────────────────────
+  const [plaOpen, setPlaOpen] = useState(false)
+  const [pla, setPla] = useState({
+    savings: 500000,
+    pension: 21000,
+    expenses: 18000,
+    age: 63,
+    lifeExpectancy: 85,
+    inflationRate: 6,
+  })
+
+  function runSimulation(
+    savings: number, pension: number, monthlyExpenses: number,
+    age: number, lifeExp: number, inflRate: number
+  ) {
+    const r = inflRate / 100
+    let balance = savings
+    let annualExpenses = monthlyExpenses * 12
+    let exhaustionAge: number | null = null
+    const timeline: { age: number; balance: number }[] = []
+    for (let yr = age; yr <= lifeExp + 1; yr++) {
+      balance += pension * 12
+      balance -= annualExpenses
+      timeline.push({ age: yr, balance })
+      if (balance < 0 && exhaustionAge === null) exhaustionAge = yr
+      annualExpenses *= (1 + r)
+    }
+    return { exhaustionAge: exhaustionAge ?? lifeExp + 1, timeline }
+  }
+
+  function solveSafeSpend(
+    savings: number, pension: number, age: number,
+    lifeExp: number, inflRate: number
+  ): number {
+    let lo = 0, hi = (pension * 12 + savings) / Math.max(lifeExp - age, 1) / 12 * 2
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2
+      const { exhaustionAge } = runSimulation(savings, pension, mid, age, lifeExp, inflRate)
+      if (exhaustionAge <= lifeExp) hi = mid
+      else lo = mid
+    }
+    return Math.round((lo + hi) / 2)
+  }
+
+  const { exhaustionAge, timeline } = runSimulation(
+    pla.savings, pla.pension, pla.expenses, pla.age, pla.lifeExpectancy, pla.inflationRate
+  )
+  const safeSpend = solveSafeSpend(
+    pla.savings, pla.pension, pla.age, pla.lifeExpectancy, pla.inflationRate
+  )
+  const overspendRisk = pla.expenses / Math.max(safeSpend, 1)
+  const fundsLastYears = exhaustionAge - pla.age
+  const costIn10Yrs = Math.round(pla.expenses * Math.pow(1 + pla.inflationRate / 100, 10))
+  const costIn20Yrs = Math.round(pla.expenses * Math.pow(1 + pla.inflationRate / 100, 20))
+  const maxBalance = Math.max(...timeline.map(t => t.balance), 1)
+  const riskColor = overspendRisk > 1.2 ? 'text-rose-600' : overspendRisk > 0.9 ? 'text-yellow-600' : 'text-emerald-600'
+  const riskBg = overspendRisk > 1.2 ? 'bg-rose-50 border-rose-200' : overspendRisk > 0.9 ? 'bg-yellow-50 border-yellow-200' : 'bg-emerald-50 border-emerald-200'
+  const riskLabel2 = overspendRisk > 1.2 ? 'High Risk — funds exhausted early' : overspendRisk > 0.9 ? 'Moderate — close to limit' : 'Healthy — within safe zone'
+
+  // ── Expense Breakdown ──────────────────────────────────────
+  type ExpCat = { id: string; label: string; icon: string; color: string; amount: number }
+  const [expOpen, setExpOpen] = useState(false)
+  const [expEditing, setExpEditing] = useState<string | null>(null)
+  const [expCats, setExpCats] = useState<ExpCat[]>([
+    { id: 'food',      label: 'Food & Groceries',   icon: 'dinner_dining',    color: 'bg-orange-400',  amount: 4500 },
+    { id: 'health',    label: 'Medicines & Health',  icon: 'medication',       color: 'bg-rose-500',    amount: 3000 },
+    { id: 'rent',      label: 'Rent & Utilities',    icon: 'home',             color: 'bg-blue-500',    amount: 5000 },
+    { id: 'transport', label: 'Transport',           icon: 'directions_bus',   color: 'bg-indigo-400',  amount: 1200 },
+    { id: 'family',    label: 'Family Support',      icon: 'family_restroom',  color: 'bg-purple-500',  amount: 2000 },
+    { id: 'entertain', label: 'Entertainment',       icon: 'tv',               color: 'bg-emerald-500', amount: 800  },
+    { id: 'other',     label: 'Other / Misc',        icon: 'more_horiz',       color: 'bg-slate-400',   amount: 1500 },
+  ])
+
+  const totalExpenses = expCats.reduce((s, c) => s + c.amount, 0)
+
+  // Auto-sync expense total → longevity analyzer
+  useEffect(() => {
+    if (totalExpenses > 0) setPla(p => ({ ...p, expenses: totalExpenses }))
+  }, [totalExpenses])
+
+  function updateCatAmount(id: string, val: number) {
+    setExpCats(cats => cats.map(c => c.id === id ? { ...c, amount: Math.max(0, val) } : c))
+  }
+
+  // ── Risk data
   const riskPct = prediction ? Math.round(prediction.risk_score * 100) : 0
   const riskLabel = prediction?.status || 'Loading...'
   const isHighRisk = riskPct > 50
@@ -231,6 +315,149 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* ══ Pension Longevity Analyzer ══ */}
+          <div className="flex flex-col gap-0 rounded-3xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+            {/* Header / toggle */}
+            <button
+              onClick={() => setPlaOpen(o => !o)}
+              className="flex items-center justify-between px-6 py-5 hover:bg-slate-50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-indigo-600 text-xl">analytics</span>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-ink text-base">Pension Longevity Analyzer</p>
+                  <p className="text-xs text-slate-500">Inflation · Lifetime sim · Safe spend · Overspend risk</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {!plaOpen && (
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold border ${riskBg} ${riskColor}`}>
+                    {overspendRisk > 1.2 ? '⚠ High Risk' : overspendRisk > 0.9 ? '◉ Moderate' : '✓ Healthy'}
+                  </div>
+                )}
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${plaOpen ? 'rotate-180' : ''}`}>expand_more</span>
+              </div>
+            </button>
+
+            {plaOpen && (
+              <div className="px-6 pb-6 flex flex-col gap-6 border-t border-slate-100">
+
+                {/* ── Inputs grid ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4">
+                  {([
+                    { key: 'savings', label: 'Current Savings', prefix: '₹', step: 10000, min: 0, max: 5000000 },
+                    { key: 'pension', label: 'Monthly Pension', prefix: '₹', step: 500, min: 0, max: 100000 },
+                    { key: 'expenses', label: 'Monthly Expenses', prefix: '₹', step: 500, min: 1000, max: 100000 },
+                    { key: 'age', label: 'Current Age', prefix: '', step: 1, min: 40, max: 90 },
+                    { key: 'lifeExpectancy', label: 'Life Expectancy', prefix: '', step: 1, min: 60, max: 100 },
+                    { key: 'inflationRate', label: 'Inflation Rate %', prefix: '', step: 0.5, min: 1, max: 15 },
+                  ] as const).map(({ key, label, prefix, step, min, max }) => (
+                    <div key={key} className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
+                      <div className="relative">
+                        {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">{prefix}</span>}
+                        <input
+                          type="number"
+                          step={step}
+                          min={min}
+                          max={max}
+                          value={pla[key]}
+                          onChange={e => setPla(p => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
+                          className={`w-full h-10 ${prefix ? 'pl-6' : 'pl-3'} pr-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Results row ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="flex flex-col gap-1 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
+                    <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-wide">Funds Last</span>
+                    <span className="text-2xl font-black text-indigo-700">{fundsLastYears > 0 ? `${fundsLastYears} yrs` : '—'}</span>
+                    <span className="text-xs text-indigo-400">
+                      {exhaustionAge <= pla.lifeExpectancy
+                        ? `Exhausted at age ${exhaustionAge}`
+                        : `Beyond age ${pla.lifeExpectancy} ✓`}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
+                    <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wide">Safe Spend</span>
+                    <span className="text-2xl font-black text-emerald-700">₹{safeSpend.toLocaleString('en-IN')}</span>
+                    <span className="text-xs text-emerald-500">Max monthly / mo</span>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+                    <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Cost in 10 yrs</span>
+                    <span className="text-2xl font-black text-amber-700">₹{(costIn10Yrs / 1000).toFixed(1)}K</span>
+                    <span className="text-xs text-amber-500">@{pla.inflationRate}% inflation</span>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-rose-50 border border-rose-100 rounded-2xl px-4 py-3">
+                    <span className="text-[11px] font-bold text-rose-500 uppercase tracking-wide">Cost in 20 yrs</span>
+                    <span className="text-2xl font-black text-rose-600">₹{(costIn20Yrs / 1000).toFixed(1)}K</span>
+                    <span className="text-xs text-rose-400">@{pla.inflationRate}% inflation</span>
+                  </div>
+                </div>
+
+                {/* ── Overspend Risk bar ── */}
+                <div className={`flex flex-col gap-2 rounded-2xl border px-5 py-4 ${riskBg}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-lg ${riskColor}`}>
+                        {overspendRisk > 1.2 ? 'warning' : overspendRisk > 0.9 ? 'error_outline' : 'check_circle'}
+                      </span>
+                      <span className={`text-sm font-bold ${riskColor}`}>Overspend Risk — {riskLabel2}</span>
+                    </div>
+                    <span className={`text-lg font-black ${riskColor}`}>{(overspendRisk * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full h-3 bg-white/60 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        overspendRisk > 1.2 ? 'bg-rose-500' : overspendRisk > 0.9 ? 'bg-yellow-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(overspendRisk * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    You spend <strong>₹{pla.expenses.toLocaleString('en-IN')}/mo</strong> vs safe limit of <strong>₹{safeSpend.toLocaleString('en-IN')}/mo</strong> — ratio: <strong>{overspendRisk.toFixed(2)}×</strong>
+                  </p>
+                </div>
+
+                {/* ── Balance Timeline chart ── */}
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Balance Timeline (₹)</p>
+                  <div className="flex items-end gap-0.5 h-20 w-full bg-slate-50 rounded-2xl px-3 py-2 overflow-x-auto">
+                    {timeline.map((t) => {
+                      const pct = Math.max(t.balance, 0) / Math.max(maxBalance, 1)
+                      const isExhausted = t.balance < 0
+                      const isLast5 = t.age >= pla.lifeExpectancy - 4
+                      return (
+                        <div key={t.age} className="flex flex-col items-center justify-end flex-1 min-w-[12px] h-full group relative">
+                          <div
+                            className={`w-full rounded-t transition-all duration-300 ${
+                              isExhausted ? 'bg-rose-400' : isLast5 ? 'bg-amber-400' : 'bg-indigo-500'
+                            }`}
+                            style={{ height: `${Math.max(pct * 100, isExhausted ? 4 : 2)}%` }}
+                          />
+                          {(t.age % 5 === 0 || t.age === pla.age || t.age === pla.lifeExpectancy) && (
+                            <span className="absolute -bottom-5 text-[9px] text-slate-400 font-medium">{t.age}</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center gap-4 mt-6">
+                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-500 inline-block" /><span className="text-[11px] text-slate-500">Positive balance</span></div>
+                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" /><span className="text-[11px] text-slate-500">Final 5 years</span></div>
+                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-400 inline-block" /><span className="text-[11px] text-slate-500">Exhausted</span></div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+
           {/* Activity Ledger */}
           <div className="flex flex-col gap-4 mt-2">
             <div className="flex items-center justify-between">
@@ -294,6 +521,153 @@ export default function Dashboard() {
 
         {/* ═══════════ Right Panel: Informational (Cream) ═══════════ */}
         <div className="w-full lg:w-[40%] bg-cream p-6 lg:p-12 flex flex-col gap-8">
+
+          {/* Prediction Widget Card */}
+
+          {/* ══ Monthly Expense Breakdown ══ */}
+          <div className="flex flex-col gap-0 rounded-3xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+            <button
+              onClick={() => setExpOpen(o => !o)}
+              className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-orange-600 text-xl">account_balance_wallet</span>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-ink text-base">Monthly Expenses</p>
+                  <p className="text-xs text-slate-500">Where your pension goes</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-base font-black text-slate-900">₹{totalExpenses.toLocaleString('en-IN')}</p>
+                  <p className={`text-[11px] font-semibold ${
+                    totalExpenses > pla.pension ? 'text-rose-500' : 'text-emerald-600'
+                  }`}>
+                    {totalExpenses > pla.pension
+                      ? `₹${(totalExpenses - pla.pension).toLocaleString('en-IN')} over pension`
+                      : `₹${(pla.pension - totalExpenses).toLocaleString('en-IN')} surplus`
+                    }
+                  </p>
+                </div>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${expOpen ? 'rotate-180' : ''}`}>expand_more</span>
+              </div>
+            </button>
+
+            {/* Stacked bar preview – always visible */}
+            <div className="flex h-2 w-full overflow-hidden">
+              {expCats.map(c => (
+                <div
+                  key={c.id}
+                  className={`${c.color} transition-all duration-500`}
+                  style={{ width: `${(c.amount / Math.max(totalExpenses, 1)) * 100}%` }}
+                />
+              ))}
+            </div>
+
+            {expOpen && (
+              <div className="px-5 pb-5 flex flex-col gap-4 border-t border-slate-100 pt-4">
+
+                {/* Pension vs Expenses summary */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-0.5 bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-2.5 text-center">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Pension</span>
+                    <span className="text-base font-black text-emerald-700">₹{pla.pension.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 bg-orange-50 border border-orange-100 rounded-2xl px-3 py-2.5 text-center">
+                    <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wide">Spent</span>
+                    <span className="text-base font-black text-orange-700">₹{totalExpenses.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className={`flex flex-col gap-0.5 rounded-2xl px-3 py-2.5 text-center border ${
+                    totalExpenses > pla.pension
+                      ? 'bg-rose-50 border-rose-100'
+                      : 'bg-indigo-50 border-indigo-100'
+                  }`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide ${
+                      totalExpenses > pla.pension ? 'text-rose-500' : 'text-indigo-500'
+                    }`}>{totalExpenses > pla.pension ? 'Deficit' : 'Saved'}</span>
+                    <span className={`text-base font-black ${
+                      totalExpenses > pla.pension ? 'text-rose-600' : 'text-indigo-700'
+                    }`}>₹{Math.abs(pla.pension - totalExpenses).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                {/* Category list */}
+                <div className="flex flex-col gap-2">
+                  {expCats.map(c => {
+                    const pct = Math.round((c.amount / Math.max(totalExpenses, 1)) * 100)
+                    const isEditing = expEditing === c.id
+                    return (
+                      <div key={c.id} className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`material-symbols-outlined text-[16px] ${
+                              c.color.replace('bg-', 'text-').replace('-400', '-500').replace('-500', '-600')
+                            }`}>{c.icon}</span>
+                            <span className="text-sm font-semibold text-slate-700">{c.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isEditing ? (
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                <input
+                                  type="number"
+                                  autoFocus
+                                  min={0}
+                                  step={100}
+                                  value={c.amount}
+                                  onChange={e => updateCatAmount(c.id, parseInt(e.target.value) || 0)}
+                                  onBlur={() => setExpEditing(null)}
+                                  onKeyDown={e => e.key === 'Enter' && setExpEditing(null)}
+                                  className="w-28 h-7 pl-6 pr-2 bg-white border border-indigo-300 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setExpEditing(c.id)}
+                                className="flex items-center gap-1 group hover:bg-slate-100 rounded-lg px-2 py-0.5 transition-colors"
+                              >
+                                <span className="text-sm font-bold text-slate-900">₹{c.amount.toLocaleString('en-IN')}</span>
+                                <span className="material-symbols-outlined text-slate-300 group-hover:text-indigo-500 text-[13px] transition-colors">edit</span>
+                              </button>
+                            )}
+                            <span className="text-xs font-semibold text-slate-400 w-9 text-right">{pct}%</span>
+                          </div>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`${c.color} h-full rounded-full transition-all duration-500`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Tip */}
+                {totalExpenses > pla.pension && (
+                  <div className="flex items-start gap-2 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3">
+                    <span className="material-symbols-outlined text-rose-500 text-base mt-0.5">warning</span>
+                    <p className="text-xs text-rose-700 leading-relaxed">
+                      Your expenses exceed your pension by <strong>₹{(totalExpenses - pla.pension).toLocaleString('en-IN')}/mo</strong>. Consider reducing discretionary spend or check savings balance.
+                    </p>
+                  </div>
+                )}
+                {totalExpenses <= pla.pension && (
+                  <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+                    <span className="material-symbols-outlined text-emerald-600 text-base mt-0.5">check_circle</span>
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      You save <strong>₹{(pla.pension - totalExpenses).toLocaleString('en-IN')}/mo</strong> after all expenses. Great financial discipline!
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-slate-400 text-center">Tap any amount to edit · Changes auto-update the Longevity Analyzer</p>
+              </div>
+            )}
+          </div>
 
           {/* Prediction Widget Card */}
           <div>
